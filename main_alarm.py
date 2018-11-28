@@ -19,18 +19,19 @@ GPIO.add_event_detect(radio_selector, GPIO.FALLING)	#add falling edge detecion t
 
 # PWM configuration
 p = GPIO.PWM(sirene, 750) 	#set sirene channel to PWM with 750 Hz frequency
-p.start(50) 				#start PWM on sirene with 50% duty cycle
+#p.start(50) 				#start PWM on sirene with 50% duty cycle
+
 
 
 # Functions
 # Turn on sirene signal
-def StartSirene():
+def StartSirene(PWM_Channel):
 	for freq in range(750, 2000, 10):
-		p.ChangeFrequency(freq)
+		PWM_Channel.ChangeFrequency(freq)
 		time.sleep(0.01)
 	time.sleep(0.5)
 	for freq in range(2000, 750, -10):
-		p.ChangeFrequency(freq)
+		PWM_Channel.ChangeFrequency(freq)
 		time.sleep(0.01)
 
 # Turn output to ON
@@ -43,7 +44,7 @@ def TurnOFF(OutputPin):
 
 # Blink LED desired number of times
 def BlinkLED(LED_Channel, HowManyTimes):
-	for x in xrange(HowManyTimes):
+	for x in range(HowManyTimes):
 		TurnON(LED_Channel)
 		time.sleep(5)
 		TurnOFF(LED_Channel)
@@ -57,56 +58,57 @@ def CheckInput(Device):
 	else: return False
 
 # Machine Case: AlarmOFF
-def AlarmOFF():
-	TurnOFF(led_light)		#Turn OFF LEDs
-	p.stop()				#stop PWM on Sirene channel
+def AlarmOFF(LED_Channel, PWM_Channel):
+	TurnOFF(LED_Channel)		#Turn OFF LEDs
+	PWM_Channel.stop()				#stop PWM on Sirene channel
 	time.sleep(3)			#wait 3 s
-	BlinkLED(led_light, 1)	#Blink LED light once
-	CaseCounter = 0			#Reset Counter
-	AlarmReady = False		#Reset Ready Flag
+	BlinkLED(LED_Channel, 1)	#Blink LED light once
 	print('Alarm Turned OFF completely')
+	
 
 # Machine Case: Active
-def AlarmON():
-		TurnON(led_light)
-		StartSirene()
+def AlarmON(LED_Channel, PWM_Channel):
+		TurnON(LED_Channel)
+		StartSirene(PWM_Channel)
 		
 		
 # Machine Case : AlarmInit
-def AlarmInit():
-	p.start(50)					#Init PWM
-	BlinkLED(led_light, 2)		#Blink LED twice
-	AlarmReady = True			#Set ready flag to True
-	CaseCounter = 0				#go to stanby
+def AlarmInit(LED_Channel):
+	#p.start(50)					#Init PWM
+	BlinkLED(LED_Channel, 2)		#Blink LED twice
 	print('Alarm Turned ON')
 
 
-def StandBy():
-		CaseCounter = 0
+def StandBy(CaseCounter):
+    CaseCounter = 0
+    return CaseCounter
+        
 	
 #Dictionary definition as case selector
 CaseSelector = {	0 : StandBy,
 					1 : AlarmInit,
-					2 : AlarmON
+					2 : AlarmON,
 					3 : AlarmOFF
 				}
 
 
+#Variables
 CaseCounter = 0
 AlarmReady = False
 
 try:
-	while 1:
-		if CheckInput(radio_selector) == True :
-				if AlarmReady == True:
-					CaseCounter = 3		#Turn alarm completely OFF if AlarmFlag was set up
-				else:
-					CaseCounter = 1		#Init Alarm, if AlarmFlag wasn't set up
-
-		if CheckInput(photo_switch) == True and AlarmReady == True:
-			CaseCounter = 2				#Activate Alarm if photoelectric switch activated and AlarmReady flag is set up
-		CaseSelector[CaseCounter]()
-
+    while 1:
+        if CheckInput(radio_selector) == True and AlarmReady == False:
+            AlarmInit(led_light)        #Init Alarm (blink twice)
+            AlarmReady = True           #and set as ready
+            
+        if CheckInput(radio_selector) == True and AlarmReady == True:
+            AlarmOFF(led_light, p)      #Turn OFF if alarm is set on
+            AlarmReady = False          #and reset flag
+            
+        if CheckInput(photo_switch) == True and AlarmReady == True:
+            AlarmON(led_light, p)       #Turn alarm on only if flag is set
+            			
 
 except KeyboardInterrupt:
 	p.stop()
