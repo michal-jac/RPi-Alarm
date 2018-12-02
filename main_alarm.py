@@ -4,9 +4,9 @@ GPIO.setmode(GPIO.BCM)
 
 # Output pins
 sirene = 18			# sirene loudspeeker
-led_light = 15		# LED lights
-photo_switch = 14	# photo switch device
-radio_selector = 13 # came radio device
+led_light = 19		# LED lights
+photo_switch = 12	# photo switch device
+radio_selector = 16 # came radio device
 
 #In/Out config
 GPIO.setup(sirene, GPIO.OUT) 		#sirene as out
