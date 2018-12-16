@@ -28,6 +28,7 @@ p = GPIO.PWM(sirene, 750) 	#set sirene channel to PWM with 750 Hz frequency
 # Functions
 # Turn on sirene signal
 def StartSirene(PWM_Channel):
+	PWM_Channel.start(50)
 	for freq in range(750, 2000, 10):
 		PWM_Channel.ChangeFrequency(freq)
 		time.sleep(0.01)
@@ -103,7 +104,7 @@ AlarmReady = False
 #POWODUJE TO WYKONANIE KODU NA ZBOCZE OPODAJACE PRZY ZALACZANIU STYKOW
 
 #DLUGOSC TRWANIA OPADAJACEGO ZBOCZA - KILKUKROTNE ODCZYTANIE TEJ SAMEJ WARTOSCI
-#(delay 0.1s poprawil sprawe
+#(delay 0.1s poprawil sprawe)
 
 
 
@@ -111,28 +112,27 @@ try:
     while 1:
 	time.sleep(0.1)
         if CheckInput(radio_selector) == True:
-		if AlarmReady == True:
-			AlarmOFF(led_light,p)
-			AlarmReady = False
-			print("Deactivated")
-		else:
-			CaseCounter += 1
-			print(CaseCounter)
-		 #and AlarmReady == False:
-			print("Detected")
-		#BlinkLED(led_light,3)
+			if AlarmReady == True:
+				AlarmOFF(led_light,p)
+				AlarmReady = False
+				CaseCounter = 0
+				print("Deactivated")
+			else:
+				print(CaseCounter)
+				print("Activated")
            		AlarmInit(led_light,p)        #Init Alarm (blink twice)
           		AlarmReady = True           #and set as ready
-#	time.sleep(0.1)            
-#        if CheckInput(radio_selector) == True and AlarmReady == True:
-#		print(CaseCounter)
-#	        AlarmOFF(led_light, p)      #Turn OFF if alarm is set on
-#		AlarmReady = False          #and reset flag
-            
-#        if CheckInput(photo_switch) == True and AlarmReady == True:
-#            AlarmON(led_light, p)       #Turn alarm on only if flag is set
-#	print(AlarmReady)            			
-#	time.sleep(2)
+
+         if CheckInput(photo_switch) == True and AlarmReady == True:
+         	CaseCounter = 2
+        while CaseCounter == 2:
+        	AlarmON(led_light,p)
+        	if CheckInput(radio_selector) == True:
+        		CaseCounter = 1
+        	time.sleep(0.05)
+
+
+
 except KeyboardInterrupt:
 	p.stop()
 	GPIO.cleanup()
