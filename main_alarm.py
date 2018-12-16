@@ -10,7 +10,9 @@ radio_selector = 16 # came radio device
 
 #In/Out config
 GPIO.setup(sirene, GPIO.OUT) 		#sirene as out
+GPIO.output(sirene, False)
 GPIO.setup(led_light, GPIO.OUT) 	#led otuput (relay for switching)
+GPIO.output(led_light, False)
 GPIO.setup(photo_switch, GPIO.IN)	#photo switch input
 GPIO.setup(radio_selector, GPIO.IN) #came radio device input
 
@@ -46,14 +48,15 @@ def TurnOFF(OutputPin):
 def BlinkLED(LED_Channel, HowManyTimes):
 	for x in range(HowManyTimes):
 		TurnON(LED_Channel)
-		time.sleep(5)
+		time.sleep(1)
 		TurnOFF(LED_Channel)
+		time.sleep(1)
 
 
 # Check if falling edge on Input (Device)
 def CheckInput(Device):
 	if GPIO.event_detected(Device) == True:
-		print("Action detected!")
+		#print("Action detected!")
 		return True
 	else: return False
 
@@ -61,7 +64,7 @@ def CheckInput(Device):
 def AlarmOFF(LED_Channel, PWM_Channel):
 	TurnOFF(LED_Channel)		#Turn OFF LEDs
 	PWM_Channel.stop()				#stop PWM on Sirene channel
-	time.sleep(3)			#wait 3 s
+	time.sleep(1)			#wait 3 s
 	BlinkLED(LED_Channel, 1)	#Blink LED light once
 	print('Alarm Turned OFF completely')
 	
@@ -73,8 +76,8 @@ def AlarmON(LED_Channel, PWM_Channel):
 		
 		
 # Machine Case : AlarmInit
-def AlarmInit(LED_Channel):
-	#p.start(50)					#Init PWM
+def AlarmInit(LED_Channel,PWM_Channel):
+	PWM_Channel.start(50)					#Init PWM
 	BlinkLED(LED_Channel, 2)		#Blink LED twice
 	print('Alarm Turned ON')
 
@@ -96,20 +99,40 @@ CaseSelector = {	0 : StandBy,
 CaseCounter = 0
 AlarmReady = False
 
+#PROBLEM DO ROZWIAZANIA: PIN INPUT DEBOUNCE
+#POWODUJE TO WYKONANIE KODU NA ZBOCZE OPODAJACE PRZY ZALACZANIU STYKOW
+
+#DLUGOSC TRWANIA OPADAJACEGO ZBOCZA - KILKUKROTNE ODCZYTANIE TEJ SAMEJ WARTOSCI
+#(delay 0.1s poprawil sprawe
+
+
+
 try:
     while 1:
-        if CheckInput(radio_selector) == True and AlarmReady == False:
-            AlarmInit(led_light)        #Init Alarm (blink twice)
-            AlarmReady = True           #and set as ready
+	time.sleep(0.1)
+        if CheckInput(radio_selector) == True:
+		if AlarmReady == True:
+			AlarmOFF(led_light,p)
+			AlarmReady = False
+			print("Deactivated")
+		else:
+			CaseCounter += 1
+			print(CaseCounter)
+		 #and AlarmReady == False:
+			print("Detected")
+		#BlinkLED(led_light,3)
+           		AlarmInit(led_light,p)        #Init Alarm (blink twice)
+          		AlarmReady = True           #and set as ready
+#	time.sleep(0.1)            
+#        if CheckInput(radio_selector) == True and AlarmReady == True:
+#		print(CaseCounter)
+#	        AlarmOFF(led_light, p)      #Turn OFF if alarm is set on
+#		AlarmReady = False          #and reset flag
             
-        if CheckInput(radio_selector) == True and AlarmReady == True:
-            AlarmOFF(led_light, p)      #Turn OFF if alarm is set on
-            AlarmReady = False          #and reset flag
-            
-        if CheckInput(photo_switch) == True and AlarmReady == True:
-            AlarmON(led_light, p)       #Turn alarm on only if flag is set
-            			
-
+#        if CheckInput(photo_switch) == True and AlarmReady == True:
+#            AlarmON(led_light, p)       #Turn alarm on only if flag is set
+#	print(AlarmReady)            			
+#	time.sleep(2)
 except KeyboardInterrupt:
 	p.stop()
 	GPIO.cleanup()
